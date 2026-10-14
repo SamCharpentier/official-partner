@@ -36,14 +36,17 @@
 (function () {
   'use strict';
 
-  if (!window.gsap || !window.jQuery) return;
+  // The footer can load a second copy from a fallback CDN when the first is slow or fails: only one runs.
+  if (!window.gsap || !window.jQuery || window.opSite) return;
+  window.opSite = {};
 
   const $ = window.jQuery;
   const html = document.documentElement;
 
   /* 0. STATE ---------------------------------------------------------------- */
 
-  const VERSION = '1.1.0';
+  const VERSION = '1.1.1';
+  window.opSite.version = VERSION;
 
   const STATE = {
     lenis: null,
