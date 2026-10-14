@@ -284,4 +284,9 @@ html:not(.wf-design-mode) .load-img-wrap{position: absolute; left: 50%; top: 50%
 .skip-link:focus-visible{transform: none;}
 main[tabindex="-1"]:focus{outline: none;}
 
+/*/ Archive: a case study on its way (op-site.js) /*/
+html.op-wait, html.op-wait *{cursor: progress !important;}
+/*/ Home tiles: the hover frames load after the landing, once op-site.js arms the tile /*/
+html:not(.wf-design-mode) .showcase-work-visual:not([data-op-frames]) .hover-visual:not(:first-child){display: none;}
+
 </style>

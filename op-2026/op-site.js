@@ -16,7 +16,7 @@
    6.  DRAWING      canvases, mirrored strokes, Drawings page
    7.  INTRO        home loader, once per session, desktop only, no layout shift
    8.  NAV SCROLL   progressive blur and nav on scroll
-   9.  SHOWCASE     home tiles hover cycle
+   9.  SHOWCASE     home tiles hover cycle, videos that load once on screen
    10. DRAWERS      accordions
    11. QUOTES       big quotes rotating on scroll
    12. ARCHIVE      list, hover previews, filter and sort, case-study panel
@@ -28,8 +28,8 @@
    once():      initLenis, initHistory, initContact, initDrawingOnce,
                 initFormGuard, labelControls (whole page), initSkipLink, initPrefetch,
                 initIntro (first load only), initAnnouncer (after Barba init)
-   everyPage(): labelControls, initNavScroll, initShowcase, initDrawers, initQuotes,
-                initDrawAreas, initDrawingsPage, initArchive, markContactLinks,
+   everyPage(): labelControls, initNavScroll, initShowcase, initLazyVideos, initDrawers,
+                initQuotes, initDrawAreas, initDrawingsPage, initArchive, markContactLinks,
                 playVideos (after a navigation)
    ========================================================================= */
 
@@ -45,17 +45,19 @@
 
   /* 0. STATE ---------------------------------------------------------------- */
 
-  const VERSION = '1.1.1';
+  const VERSION = '1.2.0';
   window.opSite.version = VERSION;
 
   const STATE = {
     lenis: null,
     intro: null,            // the home intro timeline while it plays
+    afterIntro: [],         // work waiting for the end of the intro
     locks: new Set(),       // why the scroll is locked: 'intro', 'transition', 'project', 'contact'
     page: null,             // { container, ctx, cleanups }
     path: location.pathname,
-    modal: null,            // { name, close(options) } while the contact popup or a case study is open
+    modal: null,            // { name, close(options) } while the contact popup or a case study is open or opening
     archive: null,          // the archive controller of the current page, if any
+    panelPages: new Map(),  // case-study page URL -> promise of the parsed page, kept for the whole visit
     navigated: false,       // true after the first Barba navigation
     announcer: null,        // the hidden live region that tells screen readers what changed
   };
@@ -198,6 +200,12 @@
     if (img.sizes) warm.sizes = img.sizes;
     if (img.srcset) warm.srcset = img.srcset;
     warm.src = src;
+  }
+
+  // Media on jsDelivr's GitHub endpoint, pinned to a commit, also comes from githack: the same file.
+  function mirrorUrl(url) {
+    const m = /^https:\/\/cdn\.jsdelivr\.net\/gh\/([^/]+)\/([^/@]+)@([^/]+)\/(.+)$/.exec(url);
+    return m ? 'https://rawcdn.githack.com/' + m[1] + '/' + m[2] + '/' + m[3] + '/' + m[4] : null;
   }
 
   // Resolve once the image can be painted, or after `max` ms, whichever comes first.
@@ -684,6 +692,12 @@
     return targets.length ? { targets, offsets } : null;
   }
 
+  // Runs fn once the intro is over, or at once when there is no intro playing.
+  function afterIntro(fn) {
+    if (STATE.intro) STATE.afterIntro.push(fn);
+    else fn();
+  }
+
   // Plays on the first visit of the session, on desktop, without reduced motion.
   // The head snippet hides .loader-1 before first paint when it has already played.
   // A click, a key or the wheel plays the rest three times faster.
@@ -714,6 +728,7 @@
         STATE.intro = null;
         setTimeout(() => refreshScrollTriggersAt(window.scrollY), 600);
         unlockScroll('intro');
+        STATE.afterIntro.splice(0).forEach((fn) => safely('after intro', fn));
       },
     });
     STATE.intro = tl;
@@ -811,19 +826,31 @@
   /* 9. SHOWCASE ------------------------------------------------------------- */
 
   // Hovering a tile cycles its visuals every 0.5 s; leaving shows the first one again.
+  // The hover frames (every visual but the first) are display: none in Webflow's CSS until their tile
+  // is armed, so the landing does not download them: on a device that can hover, the tiles within a
+  // screen of the viewport are armed once the intro is over and the page has loaded and gone idle;
+  // on any device, a tile is armed the moment it is hovered or focused. A frame still loading is left
+  // out of the cycle, so a tile never flashes empty.
   function initShowcase(container) {
     const loops = new Set();
-    qsa('.showcase-work-visual', container).forEach((visual) => {
+    const visuals = qsa('.showcase-work-visual', container);
+    const arm = (visual) => {
+      if (!visual.hasAttribute('data-op-frames')) visual.setAttribute('data-op-frames', '');
+    };
+    visuals.forEach((visual) => {
       let tl = null;
       const start = () => {
+        arm(visual);
         if (tl) {
           tl.kill();
           loops.delete(tl);
           tl = null;
         }
-        const frames = $(visual).find('.hover-visual').filter(function () {
-          const src = $(this).find('img').attr('src') || '';
-          return !src.includes('placeholder.svg');
+        const frames = $(visual).find('.hover-visual').filter(function (i) {
+          const img = $(this).find('img')[0];
+          const src = (img && img.getAttribute('src')) || '';
+          if (src.includes('placeholder.svg')) return false;
+          return i === 0 || !img || (img.complete && img.naturalWidth > 0);
         });
         if (!frames.length) return;
         if (frames.length === 1) {
@@ -858,6 +885,61 @@
       listen(visual, 'focusout', stop);
     });
     onCleanup(() => loops.forEach((tl) => tl.kill()));
+
+    if (!visuals.length || !media('(hover: hover)').matches || !('IntersectionObserver' in window)) return;
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        arm(entry.target);
+        io.unobserve(entry.target);
+      });
+    }, { rootMargin: '100% 0px' });
+    const observe = () => idle(() => {
+      if (STATE.page && STATE.page.container === container) visuals.forEach((visual) => io.observe(visual));
+    }, 1500);
+    afterIntro(() => (document.readyState === 'complete' ? observe() : window.addEventListener('load', observe, { once: true })));
+    onCleanup(() => {
+      io.disconnect();
+      window.removeEventListener('load', observe);
+    });
+  }
+
+  // Videos marked data-autoplay (Webflow gives them preload="none" and no autoplay) download nothing
+  // with the page: each loads and plays once the intro is over and it comes near the screen, and pauses
+  // when it leaves. A hidden one (mobile) never loads. With reduced motion, the still image under it stays.
+  function initLazyVideos(container) {
+    const videos = qsa('video[data-autoplay]', container);
+    if (!videos.length || reducedMotion.matches || !('IntersectionObserver' in window)) return;
+    const near = new Set();
+    const play = (video) => {
+      if (video.preload !== 'auto') video.preload = 'auto';
+      const playing = video.play();
+      if (playing && playing.catch) playing.catch(() => {});
+    };
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        const video = entry.target;
+        if (entry.isIntersecting) {
+          near.add(video);
+          play(video);
+        } else {
+          near.delete(video);
+          if (!video.paused) video.pause();
+        }
+      });
+    }, { rootMargin: '200px 0px' });
+    videos.forEach((video) => {
+      // The CDN failed (jsDelivr can answer 503 for a new commit): the same file, once, from the mirror.
+      listen(video, 'error', () => {
+        const mirror = mirrorUrl(video.currentSrc || video.getAttribute('src') || '');
+        if (!mirror || video.hasAttribute('data-op-mirror')) return;
+        video.setAttribute('data-op-mirror', '');
+        video.src = mirror;
+        if (near.has(video)) play(video);
+      });
+    });
+    afterIntro(() => videos.forEach((video) => io.observe(video)));
+    onCleanup(() => io.disconnect());
   }
 
   /* 10. DRAWERS ------------------------------------------------------------- */
@@ -917,32 +999,53 @@
 
   /* 12. ARCHIVE ------------------------------------------------------------- */
 
-  // The case studies are fetched from a hidden page (/archive-panels by default, or the
-  // URL in data-op-panels on .cs-coll-list) when the visitor shows intent, and cloned
-  // into the page on demand. If the panels are already in the page, they are used as is.
+  // The case studies live on a hidden page (/archive-panels by default, or the URL in
+  // data-op-panels on .cs-coll-list). It is fetched once per visit: as soon as a link to
+  // the Archive is hovered or focused, on arrival at the latest, and kept, so a click on a
+  // project never waits for the server again. Panels are cloned into the page on demand.
+  // If the panels are already in the page, they are used as is.
+  const ARCHIVE_PATH = /^(\/fr)?\/archives\/?$/;
+
+  function panelsUrl(pathname, custom) {
+    let url = custom || '/archive-panels';
+    if (/^\/fr(\/|$)/.test(pathname) && url.charAt(0) === '/' && !/^\/fr\//.test(url)) url = '/fr' + url;
+    return url;
+  }
+
+  function fetchPanels(url) {
+    if (!STATE.panelPages.has(url)) {
+      const request = fetch(url, { credentials: 'same-origin' })
+        .then((response) => {
+          if (!response.ok) throw new Error('HTTP ' + response.status + ' for ' + url);
+          return response.text();
+        })
+        .then((text) => new DOMParser().parseFromString(text, 'text/html'))
+        .catch((e) => {
+          STATE.panelPages.delete(url);   // the next attempt asks again
+          throw e;
+        });
+      STATE.panelPages.set(url, request);
+    }
+    return STATE.panelPages.get(url);
+  }
+
   function createPanels(host) {
     const source = new Map();
     if (host) qsa('.cs-coll-item[data-work]', host).forEach((el) => source.set(el.getAttribute('data-work'), el));
     const inline = source.size > 0;
-    let url = (host && host.getAttribute('data-op-panels')) || '/archive-panels';
-    if (/^\/fr(\/|$)/.test(location.pathname) && url.charAt(0) === '/' && !/^\/fr\//.test(url)) url = '/fr' + url;
+    const url = panelsUrl(location.pathname, host && host.getAttribute('data-op-panels'));
     let request = null;
 
     function load() {
       if (inline || !host) return Promise.resolve();
       if (!request) {
-        request = fetch(url, { credentials: 'same-origin' })
-          .then((response) => {
-            if (!response.ok) throw new Error('HTTP ' + response.status + ' for ' + url);
-            return response.text();
-          })
-          .then((text) => {
-            const doc = new DOMParser().parseFromString(text, 'text/html');
+        request = fetchPanels(url)
+          .then((doc) => {
             qsa('.cs-coll-item[data-work]', doc).forEach((el) => {
               const slug = el.getAttribute('data-work');
               if (!source.has(slug)) source.set(slug, el);
             });
-            log('case studies loaded:', source.size);
+            log('case studies ready:', source.size);
           })
           .catch((e) => {
             request = null;
@@ -990,6 +1093,7 @@
     let pushed = false;
     let pendingClose = null;
     let colours = null;
+    let opening = null;   // from the click until the case study is ready: { row, slug, timers, pulse }
 
     const controller = {
       openSlug(slug, options) {
@@ -1051,6 +1155,10 @@
     $c.on('click' + ns, '.work-item', function (e) {
       if ($(e.target).closest('.visit-site-btn').length) return;
       e.preventDefault();
+      if (opening) {
+        if (opening.row === this) cancelOpen();   // a second click on the row that is loading: back to the list
+        return;
+      }
       if (isAnimating) return;
       toggleRow(this, {});
     });
@@ -1070,7 +1178,7 @@
         return;
       }
       isAnimating = true;
-      setCursor('wait');
+      const attempt = beginOpen(row, slug);
       panels.load()
         .then(() => {
           const panel = panels.get(slug);
@@ -1078,15 +1186,75 @@
           return imageReady(qs('.cs-small-thumb-wrap img', panel)).then(() => panel);
         })
         .then((panel) => {
-          isAnimating = false;
+          if (opening !== attempt) return;   // cancelled meanwhile: second click, Escape, Back, contact, another page
+          endWaiting(attempt);
           if (!row.isConnected || STATE.archive !== controller) return;
           openProject($row, $(panel), newTimeline(), options);
         })
         .catch((err) => {
-          isAnimating = false;
-          setCursor('');
+          if (opening === attempt) cancelOpen();
           warn('case study unavailable:', err && err.message);
         });
+    }
+
+    // The open starts with the click, whatever the network does: the list clears and the page takes
+    // the case study's colours at once. If the case study is still on its way after a moment, the
+    // row's preview (or, without one, the row) breathes and the cursor says it is working.
+    function beginOpen(row, slug) {
+      const attempt = { row, slug, timers: [], pulse: null };
+      opening = attempt;
+      setCursor('wait');
+      // Reads first (colours, scroll position), class changes after: one style pass instead of two.
+      if (!colours) colours = { bg: getComputedStyle(container).backgroundColor, text: getComputedStyle(container).color };
+      lockScroll('project');
+      $c.find('.work-item').removeClass('active');
+      $c.find('.work-list').removeClass('active');
+      $(row).addClass('active');
+      $c.find('.work-list').addClass('active');
+      $('body').addClass('project-open');
+      preview(slug).addClass('is-active');
+      STATE.modal = { name: 'project-wait', close: (options) => cancelOpen(options) };
+      animateOpenStart();
+      attempt.timers.push(setTimeout(() => {
+        if (opening !== attempt) return;
+        html.classList.add('op-wait');
+        const image = preview(slug).find('.project-img').filter((i, el) => el.getClientRects().length > 0);
+        if (!reducedMotion.matches) {
+          attempt.pulse = gsap.to(image.length ? image : $(row).find('.work-grid'), { opacity: 0.35, duration: 0.6, ease: 'sine.inOut', yoyo: true, repeat: -1 });
+        }
+      }, 150));
+      attempt.timers.push(setTimeout(() => {
+        if (opening === attempt) announce(isFrench() ? 'Chargement du projet' : 'Loading the project');
+      }, 1000));
+      return attempt;
+    }
+
+    function endWaiting(attempt) {
+      attempt.timers.forEach(clearTimeout);
+      if (attempt.pulse) {
+        const targets = attempt.pulse.targets();
+        attempt.pulse.kill();
+        gsap.set(targets, { clearProps: 'opacity' });
+      }
+      html.classList.remove('op-wait');
+      if (opening === attempt) opening = null;
+      if (STATE.modal && STATE.modal.name === 'project-wait') STATE.modal = null;
+    }
+
+    // Back to the list before the case study opened: a second click on the row, Escape, Back,
+    // the contact popup, another page, or a case study that could not be loaded.
+    function cancelOpen({ instant = false } = {}) {
+      const attempt = opening;
+      if (!attempt) return;
+      endWaiting(attempt);
+      $c.find('.work-item').removeClass('active');
+      $c.find('.work-list').removeClass('active');
+      $('body').removeClass('project-open');
+      if (!$(attempt.row).is(':hover')) preview(attempt.slug).removeClass('is-active');
+      animateOpenCancel(instant);
+      unlockScroll('project');
+      isAnimating = false;
+      setCursor('');
     }
 
     const newTimeline = () => gsap.timeline({ defaults: { duration: 0.2, ease: 'power2.out' } });
@@ -1203,15 +1371,33 @@
       return { fromYPercent: alignTop ? -20 : 120, fromOp: alignTop ? 0 : 1 };
     }
 
+    // First part of the open, on the click: the page takes the case study's colours.
+    // overwrite 'auto': a colour tween still running from a cancel stops where this one starts.
+    function animateOpenStart() {
+      to($c.find('.sticky-gradient-top').add(container), { backgroundColor: '#F5F5F5', color: '#1E1E1E', duration: 0.75, ease: 'power3.out', overwrite: 'auto' });
+      to($c.find('.nav-gradient-white'), { opacity: 1, duration: 0.75, ease: 'power3.out', overwrite: 'auto' });
+      to($c.find('.nav-gradient'), { opacity: 0, duration: 0.75, ease: 'power3.out', overwrite: 'auto' });
+      to($c.find('.work-gradient'), { opacity: 0, duration: 0.15, ease: 'power3.out', overwrite: 'auto' });
+    }
+
+    // The open was cancelled before the case study came: the list's colours come back,
+    // taking over from the opening tweens even when they are still running.
+    function animateOpenCancel(instant) {
+      const bg = colours ? colours.bg : '#E4E8C3';
+      const text = colours ? colours.text : '#356114';
+      const timing = instant ? { duration: 0, overwrite: 'auto' } : { duration: 0.4, ease: 'power3.out', overwrite: 'auto' };
+      to($c.find('.sticky-gradient-top').add(container), { backgroundColor: bg, color: text, ...timing });
+      to($c.find('.nav-gradient-white, .work-gradient-white'), { opacity: 0, ...timing });
+      to($c.find('.nav-gradient'), { opacity: 1, ...timing });
+      to($c.find('.work-gradient'), { opacity: 1, ...timing });
+    }
+
+    // The rest of the open, once the case study is in the page.
     function animateOpenTransition($panel, tl, fromYPercent, fromOp) {
       const thumbs = $panel.find('.cs-small-thumb-contain:not(:first-child)');
       const topText = $panel.find('.cs-top-txt');
       const navs = $c.find('.nav');
       const credits = $panel.find('.cs-credit-rt p');
-      to($c.find('.sticky-gradient-top').add(container), { backgroundColor: '#F5F5F5', color: '#1E1E1E', duration: 0.75, ease: 'power3.out' });
-      to($c.find('.nav-gradient-white'), { opacity: 1, duration: 0.75, ease: 'power3.out' });
-      to($c.find('.nav-gradient'), { opacity: 0, duration: 0.75, ease: 'power3.out' });
-      to($c.find('.work-gradient'), { opacity: 0, duration: 0.15, ease: 'power3.out' });
       fromTo($panel.find('.close-contact-wrap'), { opacity: 0, y: '1rem' }, { opacity: 1, y: '0rem', duration: 0.5, delay: 0.25, ease: 'power3.out' });
       if (thumbs.length) tl.fromTo(thumbs, { yPercent: fromYPercent, opacity: fromOp }, { yPercent: 0, opacity: 1, duration: 0.5, stagger: { each: 0.05, from: 'end' }, ease: 'power3.out', delay: 0.25 }, '<0.3');
       if (topText.length) tl.fromTo(topText, { opacity: 0 }, { opacity: 1, duration: 0.8, delay: 0.58 }, 0);
@@ -1318,6 +1504,7 @@
     STATE.archive = controller;
     onCleanup(() => {
       if (STATE.archive === controller) STATE.archive = null;
+      if (opening) cancelOpen({ instant: true });
       const active = $c.find('.work-item.active');
       if (active.length) resetInstantly(active);
     });
@@ -1332,7 +1519,7 @@
       scrollToY(Math.max(0, window.scrollY + rect.top - (window.innerHeight - rect.height) / 2));
       setTimeout(() => controller.openSlug(deep, { deepLink: true }), 300);
     } else if (host) {
-      idle(() => panels.load().catch((e) => warn('case studies not loaded yet:', e.message)), 3000);
+      idle(() => panels.load().catch((e) => warn('case studies not loaded yet:', e.message)), 300);
     }
   }
 
@@ -1455,7 +1642,8 @@
   /* 13. PREFETCH ------------------------------------------------------------ */
 
   // Barba already fetches a page's HTML when a link is hovered. On top of that, after a
-  // short dwell, the first images of that page (the ones that load at once) are requested.
+  // short dwell, the first images of that page (the ones that load at once) are requested,
+  // and a link to the Archive also starts fetching its case studies.
   function initPrefetch() {
     const warmed = new Set();
     let timer = 0;
@@ -1468,6 +1656,8 @@
       const href = new URL(a.href, location.href).href;
       if (warmed.has(href)) return;
       warmed.add(href);
+      const path = new URL(href).pathname;
+      if (ARCHIVE_PATH.test(path)) fetchPanels(panelsUrl(path)).catch(() => {});
       barba.prefetch(href);
       const entry = barba.cache.get(href);
       if (!entry || !entry.request) return;
@@ -1713,6 +1903,7 @@
     labelControls(container);
     safely('nav scroll', () => initNavScroll(container));
     if (has('.showcase-work-visual')) safely('showcase', () => initShowcase(container));
+    if (has('video[data-autoplay]')) safely('lazy videos', () => initLazyVideos(container));
     if (has('[class*="drawer-top"], [drawer-top]')) safely('drawers', () => initDrawers(container));
     if (has('.about-bigquote-wrap')) safely('quotes', () => initQuotes(container));
     if (has('.footer-draw')) safely('drawing areas', () => initDrawAreas(container));
