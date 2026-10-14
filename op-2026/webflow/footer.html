@@ -1,8 +1,8 @@
 <!-- Libraries (jQuery and GSAP are loaded by Webflow) -->
 <script src="https://cdn.jsdelivr.net/npm/@barba/core@2.10.3/dist/barba.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/lenis@1.3.17/dist/lenis.min.js"></script>
-<!-- Official Partner site JS v1.1.1 (source: github.com/SamCharpentier/official-partner, branch op-2026; this build: branch op-2026-dist) -->
-<script src="https://cdn.jsdelivr.net/gh/SamCharpentier/official-partner@fa0c9fa68bd32291f85573a630050dd0859ccbfb/op-2026/op-site.min.js"></script>
+<!-- Official Partner site JS v1.2.0 (source: github.com/SamCharpentier/official-partner, branch op-2026; this build: branch op-2026-dist) -->
+<script src="https://cdn.jsdelivr.net/gh/SamCharpentier/official-partner@2f87fb1996e242554f75a97d178964a28e5f5827/op-2026/op-site.min.js"></script>
 <!-- Fallback: if jsDelivr did not deliver, the same files from unpkg and githack, in the same order -->
 <script>
 (function () {
@@ -10,7 +10,7 @@
   var files = [];
   if (!window.barba) files.push('https://unpkg.com/@barba/core@2.10.3/dist/barba.umd.js');
   if (!window.Lenis) files.push('https://unpkg.com/lenis@1.3.17/dist/lenis.min.js');
-  files.push('https://rawcdn.githack.com/SamCharpentier/official-partner/fa0c9fa68bd32291f85573a630050dd0859ccbfb/op-2026/op-site.min.js');
+  files.push('https://rawcdn.githack.com/SamCharpentier/official-partner/2f87fb1996e242554f75a97d178964a28e5f5827/op-2026/op-site.min.js');
   (function next() {
     var src = files.shift();
     if (!src) return;

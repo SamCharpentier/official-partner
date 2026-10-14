@@ -5,7 +5,7 @@
 
    Loaded before this file, in this order: jQuery and webflow.js (Webflow),
    GSAP 3.15 with Flip, ScrollTrigger, SplitText and CustomEase (Webflow's
-   GSAP settings), Lenis 1.1.20, Barba 2.9.0.
+   GSAP settings), Barba 2.10.3, Lenis 1.3.17 (site footer, webflow/footer.html).
 
    0.  STATE        scroll locks, current page, open modal
    1.  UTILS        safely(), page registry, storage, scroll helpers, images
