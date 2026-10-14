@@ -1,0 +1,188 @@
+{
+ "6acfb786a122a575a4a4c411": {
+  "@context": "https://schema.org",
+  "@graph": [
+   {
+    "@type": "ProfessionalService",
+    "@id": "https://www.officialpartner.work/#organization",
+    "name": "Official Partner",
+    "url": "https://www.officialpartner.work/",
+    "description": "Official Partner is a creative studio from Montreal that designs and builds websites, from web design and animation to development, for brands around the world.",
+    "image": "https://cdn.prod.website-files.com/6acfb786a122a575a4a4c43f/6acfb786a122a575a4a4c4ea_Group%202147255836.jpg",
+    "email": "hello@officialpartner.work",
+    "foundingDate": "2020",
+    "founder": [
+     {
+      "@type": "Person",
+      "name": "Samuel Charpentier",
+      "sameAs": "https://ca.linkedin.com/in/samcharp"
+     },
+     {
+      "@type": "Person",
+      "name": "Simon Langlois",
+      "sameAs": "https://www.linkedin.com/in/simonlangloiswork/"
+     }
+    ],
+    "address": {
+     "@type": "PostalAddress",
+     "addressLocality": "Montreal",
+     "addressRegion": "QC",
+     "addressCountry": "CA"
+    },
+    "areaServed": [
+     "Canada",
+     "United States",
+     "United Kingdom",
+     "France",
+     "Netherlands",
+     "Portugal",
+     "Sweden",
+     "Australia"
+    ],
+    "knowsAbout": [
+     "Digital design",
+     "Web development",
+     "Web animation",
+     "Copywriting",
+     "User experience",
+     "Interactive storytelling",
+     "Creative direction"
+    ],
+    "contactPoint": {
+     "@type": "ContactPoint",
+     "contactType": "sales",
+     "email": "hello@officialpartner.work",
+     "availableLanguage": [
+      "English",
+      "French"
+     ]
+    }
+   },
+   {
+    "@type": "WebSite",
+    "@id": "https://www.officialpartner.work/#website",
+    "url": "https://www.officialpartner.work/",
+    "name": "Official Partner",
+    "inLanguage": "en",
+    "publisher": {
+     "@id": "https://www.officialpartner.work/#organization"
+    }
+   }
+  ]
+ },
+ "6acfb786a122a575a4a4c41b": {
+  "@context": "https://schema.org",
+  "@graph": [
+   {
+    "@type": "ProfessionalService",
+    "@id": "https://www.officialpartner.work/#organization",
+    "name": "Official Partner",
+    "url": "https://www.officialpartner.work/",
+    "description": "Official Partner is a creative studio from Montreal that designs and builds websites, from web design and animation to development, for brands around the world.",
+    "image": "https://cdn.prod.website-files.com/6acfb786a122a575a4a4c43f/6acfb786a122a575a4a4c4ea_Group%202147255836.jpg",
+    "email": "hello@officialpartner.work",
+    "foundingDate": "2020",
+    "founder": [
+     {
+      "@type": "Person",
+      "name": "Samuel Charpentier",
+      "sameAs": "https://ca.linkedin.com/in/samcharp"
+     },
+     {
+      "@type": "Person",
+      "name": "Simon Langlois",
+      "sameAs": "https://www.linkedin.com/in/simonlangloiswork/"
+     }
+    ],
+    "address": {
+     "@type": "PostalAddress",
+     "addressLocality": "Montreal",
+     "addressRegion": "QC",
+     "addressCountry": "CA"
+    },
+    "areaServed": [
+     "Canada",
+     "United States",
+     "United Kingdom",
+     "France",
+     "Netherlands",
+     "Portugal",
+     "Sweden",
+     "Australia"
+    ],
+    "knowsAbout": [
+     "Digital design",
+     "Web development",
+     "Web animation",
+     "Copywriting",
+     "User experience",
+     "Interactive storytelling",
+     "Creative direction"
+    ],
+    "contactPoint": {
+     "@type": "ContactPoint",
+     "contactType": "sales",
+     "email": "hello@officialpartner.work",
+     "availableLanguage": [
+      "English",
+      "French"
+     ]
+    }
+   },
+   {
+    "@type": "AboutPage",
+    "@id": "https://www.officialpartner.work/about#webpage",
+    "url": "https://www.officialpartner.work/about",
+    "name": "About Official Partner",
+    "isPartOf": {
+     "@id": "https://www.officialpartner.work/#website"
+    },
+    "about": {
+     "@id": "https://www.officialpartner.work/#organization"
+    },
+    "mainEntity": {
+     "@id": "https://www.officialpartner.work/#organization"
+    }
+   }
+  ]
+ },
+ "6acfb786a122a575a4a4c425": {
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  "@id": "https://www.officialpartner.work/archives#webpage",
+  "url": "https://www.officialpartner.work/archives",
+  "name": "Archives",
+  "description": "Every project by Official Partner in one list, with the client, industry and year of each.",
+  "isPartOf": {
+   "@id": "https://www.officialpartner.work/#website"
+  },
+  "about": {
+   "@id": "https://www.officialpartner.work/#organization"
+  }
+ },
+ "6acfb786a122a575a4a4c421": {
+  "@context": "https://schema.org",
+  "@type": "ContactPage",
+  "@id": "https://www.officialpartner.work/contact#webpage",
+  "url": "https://www.officialpartner.work/contact",
+  "name": "Contact Official Partner",
+  "isPartOf": {
+   "@id": "https://www.officialpartner.work/#website"
+  },
+  "mainEntity": {
+   "@id": "https://www.officialpartner.work/#organization",
+   "@type": "ProfessionalService",
+   "name": "Official Partner",
+   "email": "hello@officialpartner.work",
+   "contactPoint": {
+    "@type": "ContactPoint",
+    "contactType": "sales",
+    "email": "hello@officialpartner.work",
+    "availableLanguage": [
+     "English",
+     "French"
+    ]
+   }
+  }
+ }
+}

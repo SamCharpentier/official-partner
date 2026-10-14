@@ -1,0 +1,6 @@
+# Official Partner: every crawler is welcome, search engines and AI assistants alike
+# (Googlebot, Bingbot, GPTBot, OAI-SearchBot, ClaudeBot, PerplexityBot, Google-Extended...).
+User-agent: *
+Allow: /
+
+Sitemap: https://www.officialpartner.work/sitemap.xml
