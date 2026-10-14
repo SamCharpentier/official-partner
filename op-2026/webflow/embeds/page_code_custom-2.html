@@ -1,0 +1,287 @@
+<style>
+
+/* To get this shitty padding-bottom/padding-right 75px bug removed */
+.wf-design-mode .wf-empty,
+.wf-editor-mode .wf-empty {
+  padding: 0;
+}
+
+.u-css {
+	position: fixed;
+  inset: 0 auto auto 0;
+}
+
+
+.menu-mobile-wrap::-webkit-scrollbar {
+  display: none;
+}
+
+.menu-mobile-wrap {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+/* These classes are never overwritten */
+.hide, [hide]{
+  display: none !important;
+}
+
+@media screen and (min-width: 992px) {
+    [class*="show-t"], [show-t] {
+        display: none !important;
+    }
+}
+
+@media screen and (max-width: 991px) {
+    [class*="hide-t"], [hide-t] {
+        display: none !important;
+    }
+}
+  @media screen and (min-width: 768px) {
+    [class*="show-ml"], [show-ml] {
+      display: none !important;
+    }
+}
+  @media screen and (max-width: 767px) {
+    [class*="hide-ml"], [hide-ml] {
+      display: none !important;
+    }
+    [class*="show-ml"], [show-ml] {
+      display: block !important;
+    }
+}
+  @media screen and (min-width: 480px) {
+    [class*="show-mp"], [show-mp] {
+      display: none !important;
+    }
+}
+  @media screen and (max-width: 479px) {
+    [class*="hide-mp"], [hide-mp] {
+      display: none !important;
+    }
+}
+
+
+
+
+
+.select-none, [select-none] , .button{
+  -webkit-user-select: none; /* Safari */
+  -ms-user-select: none; /* IE 10 and IE 11 */
+  user-select: none; /* Standard syntax */
+}
+
+.txt-field, .form_main_field_input{resize: none;}
+
+/*Accordeon*/
+.accordeon{border-color: currentColor}
+.drawer-bottom{  
+  transition-property: grid-template-rows;
+  transition-duration: 300ms;
+  transition-timing-function: ease;
+}
+.open .drawer-bottom{grid-template-rows: 1fr;}
+.open .arrow-btn-wrap{transform: rotate(45deg)}
+.drawer-item:last-child{border-bottom-width: 1px;}
+
+
+/*Menu*/
+.menu-mobile-wrap .burger-wrap{display: flex}
+.menu-mobile-wrap .nav-links-wrap{display: none}
+.menu-mobile-wrap .nav{position: static}
+.burger-line.middle{
+margin-top: calc(0.45rem - var(--border-width--main));
+margin-bottom: calc(0.45rem - var(--border-width--main));
+}
+
+.nav-logo path {fill: currentColor}
+
+.w-richtext figure{max-width: none}
+.w-richtext figure div {width: 100%}
+
+a:hover .arrow-wrap.is-01{transform: translateX(100%)}
+a:hover .arrow-wrap.is-02{transform: translateX(0%)}
+a:hover .arrow-contain{opacity: 1; transform: translateX(0%)}
+
+
+.visit-site-btn:hover .is-01{transform: translate(100%, -100%)}
+.visit-site-btn:hover .is-02{transform: translate(0%, 0%)}
+
+@media screen and (min-width: 992px) {
+
+.work-list-contain:has(.load-more:hover) .work-item .work-grid{
+  opacity: var(--swatch--opacity);
+}
+
+.work-list:has(> *:hover) > *:not(:hover, .active) .work-grid{
+  opacity: var(--swatch--opacity);
+}
+
+.work-item:hover .fixed-img-wrap{opacity: 1}
+}
+.work-grid-right .filter-icon, .work-grid-right .u-text-style-main{opacity: 0}
+.work-item:hover .filter-icon.is-close{opacity: 1}
+.work-item.active .filter-icon.is-close{opacity: 1}
+
+.work-item.active .close-btn:hover {opacity: 0.2}
+
+.page_main.is-cs .section-home{opacity: 0; pointer-events: none}
+.page_main.is-cs .top-spacing{opacity: 0; pointer-events: none}
+.page_main.is-cs .cs-page_main{opacity: 1; pointer-events: auto}
+.page_main.is-cs .cs-coll-item{display: none}
+
+[break-el]:not(.work-contain){will-change: transform}
+
+
+
+.lg-flex, .filter-item, .work-txt-caption, .cs-txt-flex, 
+.filter-icon.is-close, .work-grid-right .u-text-style-main {
+  transition:
+    opacity .4s cubic-bezier(.22, .61, .36, 1),
+    transform .55s cubic-bezier(.22, .61, .36, 1);
+}
+
+.header-text{
+  transition:
+    opacity .55s cubic-bezier(.22, .61, .36, 1);
+}
+.work-link{
+  transition:
+    opacity .75s cubic-bezier(.22, .61, .36, 1);
+}
+
+.project-open .with{opacity:0.5}
+.work-item:hover .with{opacity:0.5}
+
+.project-open .header-text{opacity:0}
+.project-open .work-item{opacity:0; pointer-events:none}
+.project-open .work-item.active{opacity:1; pointer-events:auto}
+.project-open .work-item:not(.active) .work-link{opacity:0; pointer-events:none}
+
+.work-item .work-txt-caption{transform:translateY(1rem)}
+.project-open .work-item.active .work-txt-caption{opacity:1; transform:translateY(0rem)}
+.project-open .lg-flex{opacity:0}
+.project-open .load-more{opacity:0}
+.project-open .filter-item{opacity:0; transform:translateY(-1rem)}
+
+.project-open .filter-icon.is-close{transform:rotate(0deg)}
+.project-open .work-item.active .fixed-img-wrap img{opacity:0}
+.project-open .project-img.is-main{opacity:0}
+.project-open .cs-page_main{opacity:1}
+
+.work-item.active .work-grid-right .filter-icon:not(.is-close),
+.work-item.active .work-grid-right .u-text-style-main{opacity: 1}
+.wf-design-mode .project-open .cs-coll-item:first-child{display: block; opacity: 1}
+
+.is-cs-active .cs-cred-grid{pointer-events: auto}
+.is-cs-active .cs-top-txt{pointer-events: auto}
+
+.cs-txt-flex{opacity: 0}
+.cs-infos-active .cs-txt-flex{opacity: 1}
+.industry-item:last-child .virgule{display: none}
+
+
+.u-theme-orange{--swatch--opacity: 0.5}
+
+.hover-visual:nth-child(1){opacity : 1}
+.wf-design-mode .showcase-work-visual:hover .showcase-hover-color{opacity: 1}
+.wf-design-mode .footer-draw{pointer-events: none}
+
+
+@media screen and (max-width: 769px) {
+.cs-sections section:not(.quote-section) {margin-top: 0rem!important; margin-bottom: 4rem!important}
+.section.is-showcase{margin-top: 0rem!important; margin-bottom: 0rem!important}
+}
+
+
+.industry-item{display: none}
+.industry-item:first-child{display: flex}
+
+.contact-popup .contact-link.link-hover{pointer-events: none}
+
+.is-active .filter-icon {transform: rotate(180deg)}
+
+.lg-flex.w--current{opacity: 1}
+.wf-design-mode .header-text.u-text-style-h1.is-footer{pointer-events: auto}
+.locale-list:has(.lg-flex:not(.w--current):hover) .lg-flex.w--current{opacity: 0.2!important}
+.nav .lg-flex.w--current{display: none}
+.nav .lg-flex{opacity: 1}
+
+.work-item:hover .work-grid-img-wrap{opacity: 1}
+.work-grid-img-wrap{
+translate: 0 0 0;
+  transition: translate 0.25s ease;
+
+}
+
+.work-item:hover + .work-item .work-grid-img-wrap {
+translate: 0 -1.25rem 0;
+margin-left: 0rem;
+}
+
+
+.work-item:has(+ .work-item:hover) .work-grid-img-wrap {
+translate: 0 1.25rem 0;
+}
+.drawing-grid:has(.drawing-item.is-active) .drawing-item:not(.is-active){opacity: 0.3}
+
+.drawing-grid {
+  counter-reset: drawing;
+}
+
+.drawing-grid > .w-dyn-item {
+  counter-increment: drawing;
+}
+
+.drawing-grid > .w-dyn-item .drawing-txt::before {
+  content: counter(drawing);
+  display: inline-block;
+}
+
+
+.load-img {
+  opacity: 0;
+  animation: loop 0.7s infinite steps(1);
+}
+
+.load-img:nth-child(1) { animation-delay: 0s; }
+.load-img:nth-child(2) { animation-delay: 0.1s; }
+.load-img:nth-child(3) { animation-delay: 0.2s; }
+.load-img:nth-child(4) { animation-delay: 0.3s; }
+.load-img:nth-child(5) { animation-delay: 0.4s; }
+.load-img:nth-child(6) { animation-delay: 0.5s; }
+.load-img:nth-child(7) { animation-delay: 0.6s; }
+
+@keyframes loop {
+  0%   { opacity: 1; }
+  14%  { opacity: 1; }
+  15%  { opacity: 0; }
+  100% { opacity: 0; }
+}
+@media (max-width: 767px) {
+.load-img {
+  opacity: 0;
+  animation: loop 2.8s infinite steps(1);
+}
+
+.load-img:nth-child(1) { animation-delay: 0s; }
+.load-img:nth-child(2) { animation-delay: 0.4s; }
+.load-img:nth-child(3) { animation-delay: 0.8s; }
+.load-img:nth-child(4) { animation-delay: 1.2s; }
+.load-img:nth-child(5) { animation-delay: 1.6s; }
+.load-img:nth-child(6) { animation-delay: 2.0s; }
+.load-img:nth-child(7) { animation-delay: 2.4s; }
+
+}
+
+.wf-design-mode .loader-1:not(.open){display: none}
+
+/*/ Intro: the loader image grows by transform, nothing in the page shifts (op-site.js) /*/
+html:not(.wf-design-mode) .load-quote-flex{position: relative; column-gap: 3rem;}
+html:not(.wf-design-mode) .load-img-wrap{position: absolute; left: 50%; top: 50%; width: 81em; min-width: 0; transform: translate(-50%, -50%) scale(0);}
+
+/*/ Skip link and focus target /*/
+.skip-link{position: absolute; left: 1rem; top: 1rem; z-index: 2000; padding: 0.75rem 1rem; background-color: var(--_theme---text); color: var(--_theme---background); pointer-events: auto; transform: translateY(-300%);}
+.skip-link:focus-visible{transform: none;}
+main[tabindex="-1"]:focus{outline: none;}
+
+</style>

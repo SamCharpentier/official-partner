@@ -1,0 +1,189 @@
+<style>
+:root {
+  --site--max-width: min(var(--site--width), 100vw);
+  --container--main: calc(var(--site--max-width));
+  --container--full: calc(100vw - var(--site--margin) * 2);
+  --container--small: calc(var(--column-width--plus-gutter) * (var(--site--column-count) - 2) - var(--site--gutter));
+  --site--gutter-total: calc(var(--site--gutter) * (var(--site--column-count) - 1));
+  --column-width--1: calc((var(--container--main) - var(--site--gutter-total)) / var(--site--column-count));
+  --column-width--plus-gutter: calc(var(--column-width--1) + var(--site--gutter));
+  --column-width--2: calc(var(--column-width--plus-gutter) * 2 - var(--site--gutter));
+  --column-width--3: calc(var(--column-width--plus-gutter) * 3 - var(--site--gutter));
+  --column-width--4: calc(var(--column-width--plus-gutter) * 4 - var(--site--gutter));
+  --column-width--5: calc(var(--column-width--plus-gutter) * 5 - var(--site--gutter));
+  --column-width--6: calc(var(--column-width--plus-gutter) * 6 - var(--site--gutter));
+  --column-width--7: calc(var(--column-width--plus-gutter) * 7 - var(--site--gutter));
+  --column-width--8: calc(var(--column-width--plus-gutter) * 8 - var(--site--gutter));
+  --column-width--9: calc(var(--column-width--plus-gutter) * 9 - var(--site--gutter));
+  --column-width--10: calc(var(--column-width--plus-gutter) * 10 - var(--site--gutter));
+  --column-width--11: calc(var(--column-width--plus-gutter) * 11 - var(--site--gutter));
+  --column-width--12: calc(var(--column-width--plus-gutter) * 12 - var(--site--gutter));
+  --column-margin--1: calc(var(--column-width--plus-gutter) * 1);
+  --column-margin--2: calc(var(--column-width--plus-gutter) * 2);
+  --column-margin--3: calc(var(--column-width--plus-gutter) * 3);
+  --column-margin--4: calc(var(--column-width--plus-gutter) * 4);
+  --column-margin--5: calc(var(--column-width--plus-gutter) * 5);
+  --column-margin--6: calc(var(--column-width--plus-gutter) * 6);
+  --column-margin--7: calc(var(--column-width--plus-gutter) * 7);
+  --column-margin--8: calc(var(--column-width--plus-gutter) * 8);
+  --column-margin--9: calc(var(--column-width--plus-gutter) * 9);
+  --column-margin--10: calc(var(--column-width--plus-gutter) * 10);
+  --column-margin--11: calc(var(--column-width--plus-gutter) * 11);
+  --column-margin--12: calc(var(--column-width--plus-gutter) * 12);
+  --breakout-start: [full-start] minmax(0, 1fr) [content-start];
+  --breakout-end: [content-end] minmax(0, 1fr) [full-end];
+  --grid-breakout-single: var(--breakout-start) minmax(0, var(--container--main)) var(--breakout-end);
+  --grid-breakout: var(--breakout-start) repeat(var(--site--column-count), minmax(0, var(--column-width--1))) var(--breakout-end);
+  --grid-main: repeat(var(--site--column-count), minmax(0, 1fr));
+  --grid-1: repeat(1, minmax(0, 1fr));
+  --grid-2: repeat(2, minmax(0, 1fr));
+  --grid-3: repeat(3, minmax(0, 1fr));
+  --grid-4: repeat(4, minmax(0, 1fr));
+  --grid-5: repeat(5, minmax(0, 1fr));
+  --grid-6: repeat(6, minmax(0, 1fr));
+  --grid-7: repeat(7, minmax(0, 1fr));
+  --grid-8: repeat(8, minmax(0, 1fr));
+  --grid-9: repeat(9, minmax(0, 1fr));
+  --grid-10: repeat(10, minmax(0, 1fr));
+  --grid-11: repeat(11, minmax(0, 1fr));
+  --grid-12: repeat(12, minmax(0, 1fr));
+	--_typography---text-transform--none: none;
+	--_typography---text-transform--uppercase: uppercase;
+	--_typography---text-transform--captialize: capitalize;
+	--_typography---text-transform--lowercase: lowercase;
+	--align--flex-start: flex-start;
+	--align--flex-center: center;
+	--align--flex-end: flex-end;
+	--align--text-left: left;
+	--align--text-center: center;
+	--align--text-right: right;
+}
+* {
+	vertical-align: bottom;
+}
+::before, ::after {
+	box-sizing: border-box;
+}
+button {
+	background-color: unset;
+	padding: unset;
+	text-align: inherit;
+}
+button:not(:disabled) {
+	cursor: pointer;
+}
+video {
+	width: 100%;
+	object-fit: cover;
+}
+video.wf-empty {
+	padding: 0;
+}
+svg {
+	max-width: 100%;
+}
+section, header, footer {
+	position: relative;
+}
+@media (prefers-color-scheme: light) {
+	option {
+		color: black;
+	}
+}
+img::selection {
+	background: transparent;
+}
+/* Typography */
+body {
+	text-transform: var(--_text-style---text-transform);
+	font-smoothing: antialiased;
+	-webkit-font-smoothing: antialiased;
+}
+a:not([class]) {
+	text-decoration: underline;
+}
+h1,h2,h3,h4,h5,h6,p,blockquote,label {
+	font-family: inherit;
+	font-size: inherit;
+	font-weight: inherit;
+	line-height: inherit;
+	letter-spacing: inherit;
+	text-transform: inherit;
+	text-wrap: inherit;
+	margin-top: 0;
+	margin-bottom: 0;
+}
+:is(.u-margin-trim, .u-alignment-vertical, .u-rich-text) > :not(:not(.w-condition-invisible) ~ :not(.w-condition-invisible)) {
+	margin-top: 0;
+}
+:is(.u-margin-trim, .u-alignment-vertical, .u-rich-text) > :not(:has(~ :not(.w-condition-invisible))) {
+	margin-bottom: 0;
+}
+.w-richtext a {
+	position: relative;
+	z-index: 4;
+}
+:is([class*="u-text-style-"], .u-rich-text :is(h1,h2,h3,h4,h5,h6,p))::before {
+	content: "";
+	display: table;
+	margin-bottom: calc(-0.5lh + var(--_text-style---trim-top));
+}
+:is([class*="u-text-style-"], .u-rich-text :is(h1,h2,h3,h4,h5,h6,p))::after {
+	content: "";
+	display: table;
+	margin-bottom: calc(-0.5lh + var(--_text-style---trim-bottom));
+}
+.u-line-clamp-1, .u-line-clamp-2, .u-line-clamp-3, .u-line-clamp-4 {
+	-webkit-line-clamp: 1;
+	-webkit-box-orient: vertical;
+}
+.u-line-clamp-2 { -webkit-line-clamp: 2; }
+.u-line-clamp-3 { -webkit-line-clamp: 3; }
+.u-line-clamp-4 { -webkit-line-clamp: 4; }
+
+/* Hide */
+.u-hide-if-empty:empty,
+.u-hide-if-empty:not(:has(> :not(.w-condition-invisible))),
+.u-hide-if-empty-cms:not(:has(.w-dyn-item)),
+.w-richtext[class*="u-text-style-"] > :not(h1,h2,h3,h4,h5,h6,p,blockquote,ul,ol,span),
+.u-embed-js,
+.u-embed-css {
+	display: none !important;
+}
+
+/* Focus State */
+a, button, :where([tabindex]),
+.w-checkbox-input--inputType-custom,
+.w-form-formradioinput--inputType-custom {
+	outline-offset: var(--focus--offset-outer);
+}
+a:focus-visible,
+button:focus-visible,
+[tabindex]:focus-visible,
+.w-checkbox:has(:focus-visible) .w-checkbox-input--inputType-custom,
+.w-radio:has(:focus-visible) .w-form-formradioinput--inputType-custom {
+	outline-color: transparent;
+	outline-width: var(--focus--width);
+	outline-style: solid;
+}
+.w-checkbox-input--inputType-custom.w--redirected-focus,
+.w-form-formradioinput--inputType-custom.w--redirected-focus {
+	box-shadow: none;
+}
+
+/* Global / Clickable Component */
+.wf-design-mode .g_clickable_wrap {
+	z-index: 0;
+}
+.g_clickable_wrap a[href="#"] {
+	display: none;
+}
+.g_clickable_wrap a[href="#"] ~ button {
+	display: block;
+}
+
+[max=ch10],[max=ch11],[max=ch12],[max=ch13],[max=ch14],[max=ch15],[max=ch16],[max=ch17],[max=ch18],[max=ch19],[max=ch20],[max=ch21],[max=ch22],[max=ch23],[max=ch24],[max=ch25],[max=ch30],[max=ch35],[max=ch40],[max=ch45],[max=ch50],[max=ch55],[max=ch5],[max=ch60],[max=ch65],[max=ch70],[max=ch75]{text-wrap:balance}[max=ch5]{max-width:5ch}[max=ch10]{max-width:10ch}[max=ch11]{max-width:11ch}[max=ch12]{max-width:12ch}[max=ch13]{max-width:13ch}[max=ch14]{max-width:14ch}[max=ch15]{max-width:15ch}[max=ch16]{max-width:16ch}[max=ch17]{max-width:17ch}[max=ch18]{max-width:18ch}[max=ch19]{max-width:19ch}[max=ch20]{max-width:20ch}[max=ch21]{max-width:21ch}[max=ch22]{max-width:22ch}[max=ch23]{max-width:23ch}[max=ch24]{max-width:24ch}[max=ch25]{max-width:25ch}[max=ch30]{max-width:30ch}[max=ch35]{max-width:35ch}[max=ch40]{max-width:40ch}[max=ch45]{max-width:45ch}[max=ch50]{max-width:50ch}[max=ch55]{max-width:55ch}[max=ch60]{max-width:60ch}[max=ch65]{max-width:65ch}[max=ch70]{max-width:70ch}[max=ch75]{max-width:75ch}[z-1]{z-index: 1}
+[z-2]{z-index: 2}
+[z-3]{z-index: 3}
+[nowrap]{text-wrap: pretty}
+</style>
