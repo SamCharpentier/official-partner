@@ -14,7 +14,7 @@
    4.  HISTORY      Back and Forward for the contact popup and the case studies
    5.  CONTACT      popup (persistent, outside the Barba container)
    6.  DRAWING      canvases, mirrored strokes, Drawings page
-   7.  INTRO        home loader, once per session, desktop only
+   7.  INTRO        home loader, once per session, desktop only, no layout shift
    8.  NAV SCROLL   progressive blur and nav on scroll
    9.  SHOWCASE     home tiles hover cycle
    10. DRAWERS      accordions
@@ -22,12 +22,13 @@
    12. ARCHIVE      list, hover previews, filter and sort, case-study panel
    13. PREFETCH     next page HTML and its first images, on intent
    14. TRANSITIONS  colour cross-fade between pages, arrival animations
-   15. BARBA        hooks and init
+   15. BARBA        hooks and init, page change announced to screen readers, skip link
    16. BOOT         editor bail-out, once(), everyPage(), initBarba()
 
    once():      initLenis, initHistory, initContact, initDrawingOnce,
-                initFormGuard, initPrefetch, initIntro (first load only)
-   everyPage(): initNavScroll, initShowcase, initDrawers, initQuotes,
+                initFormGuard, labelControls (whole page), initSkipLink, initPrefetch,
+                initIntro (first load only), initAnnouncer (after Barba init)
+   everyPage(): labelControls, initNavScroll, initShowcase, initDrawers, initQuotes,
                 initDrawAreas, initDrawingsPage, initArchive, markContactLinks,
                 playVideos (after a navigation)
    ========================================================================= */
@@ -42,7 +43,7 @@
 
   /* 0. STATE ---------------------------------------------------------------- */
 
-  const VERSION = '1.0.0';
+  const VERSION = '1.1.0';
 
   const STATE = {
     lenis: null,
@@ -53,6 +54,7 @@
     modal: null,            // { name, close(options) } while the contact popup or a case study is open
     archive: null,          // the archive controller of the current page, if any
     navigated: false,       // true after the first Barba navigation
+    announcer: null,        // the hidden live region that tells screen readers what changed
   };
 
   /* 1. UTILS ---------------------------------------------------------------- */
@@ -353,6 +355,7 @@
       if (!label.data('opLabel')) label.data('opLabel', label.text());
       if (navigator.clipboard) navigator.clipboard.writeText(email).catch(() => {});
       gsap.fromTo(label, { yPercent: 30, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 0.4, onStart: () => label.text(isFrench() ? 'Courriel copié' : 'Email copied!') });
+      announce(isFrench() ? 'Courriel copié' : 'Email copied');
       if (restore) restore.kill();
       restore = gsap.delayedCall(3, () => {
         gsap.fromTo(label, { yPercent: 30, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 0.4, onStart: () => label.text(label.data('opLabel')) });
@@ -360,7 +363,7 @@
     });
 
     const popup = Contact.popup();
-    if (popup) labelButtons(popup);
+    if (popup) labelControls(popup);
   }
 
   // Contact links in a new page skip Barba (the click handler above opens the popup).
@@ -368,11 +371,38 @@
     qsa(CONTACT_LINKS, container).forEach((link) => link.setAttribute('data-barba-prevent', ''));
   }
 
-  // Icon-only buttons get a name screen readers can announce.
-  function labelButtons(root) {
+  // Safety net behind the labels set in Webflow: icon-only controls get a name screen readers
+  // can announce, inline icons are hidden from them, and links that lead nowhere leave the tab order.
+  function labelControls(root) {
     const fr = isFrench();
-    qsa('.close-contact', root).forEach((b) => b.hasAttribute('aria-label') || b.setAttribute('aria-label', fr ? 'Fermer' : 'Close'));
-    qsa('.close-archive', root).forEach((b) => b.hasAttribute('aria-label') || b.setAttribute('aria-label', fr ? 'Fermer le projet' : 'Close project'));
+    const name = (selector, en, frText) => qsa(selector, root).forEach((el) => {
+      if (el.hasAttribute('aria-label') || el.textContent.trim()) return;   // visible text already names it
+      el.setAttribute('aria-label', fr ? frText : en);
+    });
+    name('.close-contact', 'Close', 'Fermer');
+    name('.close-archive', 'Close project', 'Fermer le projet');
+    name('a.nav-logo-wrap', 'Official Partner, home', 'Official Partner, accueil');
+    name('input[fs-cmsfilter-field]', 'Search projects', 'Chercher un projet');
+    qsa('svg:not([aria-hidden]):not([role]):not([aria-label])', root).forEach((svg) => {
+      if (!svg.querySelector('title')) svg.setAttribute('aria-hidden', 'true');
+    });
+    qsa('a[href="#"]', root).forEach((a) => {
+      if (a.textContent.trim() || a.hasAttribute('aria-label')) return;
+      a.setAttribute('aria-hidden', 'true');
+      a.setAttribute('tabindex', '-1');
+    });
+    labelDrawings(root);
+  }
+
+  // Drawing buttons show their number through a CSS counter only; the name repeats that number.
+  function labelDrawings(root) {
+    const fr = isFrench();
+    qsa('.drawing-grid', root).forEach((grid) => {
+      Array.from(grid.children).filter((item) => item.classList.contains('w-dyn-item')).forEach((item, i) => {
+        const button = qs('.drawing-item-btn', item);
+        if (button) button.setAttribute('aria-label', (fr ? 'Dessin ' : 'Drawing ') + (i + 1));
+      });
+    });
   }
 
   // Enter in a text field never submits a form (the archive search, the drawing form).
@@ -579,6 +609,7 @@
       const clone = $c.find('.drawing-item:first-child').first().clone();
       clone.prependTo($c.find('.drawing-grid').first()).addClass('is-user');
       clone.find('.drawing-code').text(JSON.stringify(Draw.user));
+      labelDrawings(container);
       clone.find('.drawing-item-btn').trigger('click');
     } else {
       $c.find('.drawing-item:first-child .drawing-item-btn').first().trigger('click');
@@ -586,6 +617,69 @@
   }
 
   /* 7. INTRO ---------------------------------------------------------------- */
+
+  // The loader image grows without moving anything in the layout. Webflow's CSS keeps it at its
+  // final size (absolute, 81em wide, scale 0) and keeps the two quotes at their starting width;
+  // these transforms then draw exactly what the old min-width tweens drew: the image scaled to the
+  // width it would have had, the quotes shrunk and pushed aside as the flex row would have done.
+  // Without that CSS (an older publish), null: the old min-width tweens run instead.
+  function loaderGrowth() {
+    const wrap = qs('.load-img-wrap');
+    const left = qs('.load-quote.is-01');
+    const right = qs('.load-quote.is-02');
+    if (!wrap || !left || !right || getComputedStyle(wrap).position !== 'absolute') return null;
+    const word = qs('.load-word-wrap');
+    const em = parseFloat(getComputedStyle(wrap).fontSize) || 16;
+    const quoteEm = parseFloat(getComputedStyle(left).fontSize) || em;
+    const start = left.getBoundingClientRect().width;   // a quote's width while the image takes no room
+    const full = 81 * em;
+    const g = { w: 0 };
+    const draw = () => {
+      const s = g.w / full;
+      const k = Math.max(0, 1 - g.w / (2 * start));
+      gsap.set(wrap, { x: 0, y: 0, xPercent: -50, yPercent: -50, scale: s });
+      if (word) gsap.set(word, { scale: s > 0.001 ? 1 / s : 1 });   // the word keeps its own size
+      gsap.set(left, { x: -g.w / 4, scale: k });
+      gsap.set(right, { x: g.w / 4, scale: k });
+    };
+    draw();
+    return {
+      g,
+      draw,
+      quote: 29.7 * em,
+      full,
+      shift: (n) => ({ left: -full / 4 + n * quoteEm, right: full / 4 - n * quoteEm }),
+    };
+  }
+
+  // The page under the loader rises into place by transforms: the same travel as the old 100vh
+  // height tween on .top-spacing.is-top, without layout shifts. What the taller block pushed down
+  // (the blocks after it, the bottom row inside it) is measured once, in the same frame, and moved
+  // by that much instead. Null when the block cannot grow: the old tween then runs, unchanged.
+  function heroRise(container) {
+    const topBlock = qs('.top-spacing.is-top', container);
+    if (!topBlock) return null;
+    const after = [];
+    for (let el = topBlock.nextElementSibling; el; el = el.nextElementSibling) after.push(el);
+    const all = qsa('*', topBlock).concat(after);
+    const before = all.map((el) => el.getBoundingClientRect().top);
+    const natural = topBlock.getBoundingClientRect().height;
+    const inline = topBlock.style.height;
+    topBlock.style.height = window.innerHeight + 'px';
+    const grown = topBlock.getBoundingClientRect().height - natural;
+    const moved = new Map(all.map((el, i) => [el, el.getBoundingClientRect().top - before[i]]));
+    topBlock.style.height = inline;
+    if (Math.abs(grown) < 0.5) return null;
+    const targets = [];
+    const offsets = [];
+    all.forEach((el) => {
+      const own = moved.get(el) - (moved.has(el.parentElement) ? moved.get(el.parentElement) : 0);
+      if (Math.abs(own) < 0.5) return;
+      targets.push(el);
+      offsets.push(own);
+    });
+    return targets.length ? { targets, offsets } : null;
+  }
 
   // Plays on the first visit of the session, on desktop, without reduced motion.
   // The head snippet hides .loader-1 before first paint when it has already played.
@@ -621,9 +715,17 @@
     });
     STATE.intro = tl;
 
-    tl.to('.load-img-wrap', { minWidth: '29.7em', duration: 0.4, delay: 0.2, ease: 'opOvershoot' })
+    // Without layout shifts (CLS): the image and the quotes move by transforms, the page by a transform.
+    const growth = loaderGrowth();
+    const rise = heroRise(container);
+    const grow = (width, vars) => (growth
+      ? { ...vars, onUpdate: growth.draw, w: width === 'quote' ? growth.quote : growth.full }
+      : { ...vars, minWidth: width === 'quote' ? '29.7em' : '81em' });
+    const quoteX = (n, side) => (growth ? growth.shift(n)[side] : (side === 'left' ? n : -n) + 'em');
+
+    tl.to(growth ? growth.g : '.load-img-wrap', grow('quote', { duration: 0.4, delay: 0.2, ease: 'opOvershoot' }))
       .to('.load-quote-flex', { scale: 0.9, duration: 0.7, ease: 'opOvershoot' }, '<1.4')
-      .to('.load-img-wrap', { minWidth: '81em', duration: 0.35, ease: 'opSnap' }, '<0.1')
+      .to(growth ? growth.g : '.load-img-wrap', grow('full', { duration: 0.35, ease: 'opSnap' }), '<0.1')
       .to('.load-img-anim-wrap', { scale: 0.5, duration: 0.35, ease: 'opSnap' }, '<')
       .set('.load-word-wrap', { opacity: 1 }, '<0.05')
       .set('.load-img-anim-wrap', { opacity: 0 }, '<')
@@ -636,15 +738,15 @@
       .to('.load-quote-flex', { rotate: -15, duration: 0.6, ease: 'elastic.inOut(1,1.2)' }, '<0.5')
       .add(() => setWord('clever'), '<0.3')
       .to('.load-img-wrap', { duration: 0.25, ease: 'opPop' }, '<')
-      .set('.load-quote.is-01', { x: '7em' }, '<')
-      .set('.load-quote.is-02', { x: '-7em' }, '<')
+      .set('.load-quote.is-01', { x: quoteX(7, 'left') }, '<')
+      .set('.load-quote.is-02', { x: quoteX(7, 'right') }, '<')
       .set('.load-quote-flex', { scale: 1.12 }, '<')
       .set('.page_main', { backgroundColor: '#B5B0FF' }, '<')
       .set('.load-quote-flex', { color: '#003133' }, '<')
       .to('.load-quote-flex', { rotate: 20, duration: 0.8, ease: 'elastic.inOut(1,0.8)' }, '<0.5')
       .add(() => setWord('wow'), '<0.35')
-      .set('.load-quote.is-01', { x: '17em' }, '<')
-      .set('.load-quote.is-02', { x: '-17em' }, '<')
+      .set('.load-quote.is-01', { x: quoteX(17, 'left') }, '<')
+      .set('.load-quote.is-02', { x: quoteX(17, 'right') }, '<')
       .set('.load-quote-flex', { scale: 1.45 }, '<')
       .set('.page_main', { backgroundColor: '#BBE0F1' }, '<')
       .set('.load-quote-flex', { color: '#356114' }, '<')
@@ -664,7 +766,9 @@
       .from('.section.is-hero', { duration: 0.8, ease: 'power3.inOut' }, '<')
       .to('.loader-title', { yPercent: -50, opacity: 0, duration: 0.3, stagger: { amount: 0.1, from: 'end' }, ease: 'power3.inOut' }, '<')
       .from('.nav', { opacity: 0 }, '<')
-      .from('.top-spacing.is-top', { height: '100vh', duration: 1.5, ease: 'power4.inOut' }, '<')
+      .from(rise ? rise.targets : '.top-spacing.is-top', rise
+        ? { y: (i) => rise.offsets[i], duration: 1.5, ease: 'power4.inOut', clearProps: 'transform' }
+        : { height: '100vh', duration: 1.5, ease: 'power4.inOut' }, '<')
       .to('.page_main', { backgroundColor: '#e6e6e6', duration: 1.2 }, '<')
       .set('.loader-1', { pointerEvents: 'none' }, '<');
 
@@ -852,7 +956,7 @@
       if (el.ownerDocument === document) return el;
       const live = document.importNode(el, true);
       host.appendChild(live);
-      labelButtons(live);
+      labelControls(live);
       source.set(slug, live);
       return live;
     }
@@ -1509,6 +1613,50 @@
 
   /* 15. BARBA --------------------------------------------------------------- */
 
+  // Barba marks the whole wrapper aria-live, so screen readers would read out every change on
+  // the page. One hidden live region says what changed instead (the new page's title, a copied
+  // email), and after a page change the focus moves to the new main region.
+  function initAnnouncer() {
+    const wrapper = qs('[data-barba="wrapper"]');
+    if (wrapper) wrapper.removeAttribute('aria-live');
+    if (STATE.announcer) return;
+    const region = document.createElement('div');
+    region.className = 'u-sr-only';
+    region.setAttribute('aria-live', 'polite');
+    region.setAttribute('aria-atomic', 'true');
+    document.body.appendChild(region);
+    STATE.announcer = region;
+  }
+
+  function announce(text) {
+    if (!STATE.announcer) return;
+    STATE.announcer.textContent = '';
+    setTimeout(() => { STATE.announcer.textContent = text; }, 50);   // a fresh change, even for the same words
+  }
+
+  function focusPage(container) {
+    const target = qs('main', container) || container;
+    if (!target.hasAttribute('tabindex')) target.setAttribute('tabindex', '-1');
+    target.focus({ preventScroll: true });
+    announce(document.title);
+  }
+
+  // The skip link (first in the nav) moves the focus to the page's main region. Webflow's anchor
+  // scroll only moves the focus after it has scrolled, and <main> already sits at the top, so the
+  // link is handled here, before Webflow and Barba see the click.
+  function initSkipLink() {
+    document.addEventListener('click', (e) => {
+      const link = e.target.closest && e.target.closest('.skip-link');
+      if (!link) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const target = qs('main', qs('[data-barba="container"]') || document) || qs('#main');
+      if (!target) return;
+      if (!target.hasAttribute('tabindex')) target.setAttribute('tabindex', '-1');
+      target.focus({ preventScroll: true });
+    }, true);
+  }
+
   function initBarba() {
     if (!window.barba) return;
 
@@ -1543,6 +1691,7 @@
           next.removeAttribute('style');
           safely('current links', () => markCurrentLinks(next));
           everyPage(next);
+          safely('focus', () => focusPage(next));
           safely('videos', () => playVideos(next));
           setTimeout(() => unlockScroll('transition'), 100);
           ScrollTrigger.refresh();
@@ -1550,6 +1699,7 @@
         },
       }],
     });
+    safely('announcer', initAnnouncer);
   }
 
   /* 16. BOOT ---------------------------------------------------------------- */
@@ -1557,7 +1707,7 @@
   function everyPage(container) {
     const has = (selector) => !!container.querySelector(selector);
     container.classList.remove('is-cs');
-    labelButtons(container);
+    labelControls(container);
     safely('nav scroll', () => initNavScroll(container));
     if (has('.showcase-work-visual')) safely('showcase', () => initShowcase(container));
     if (has('[class*="drawer-top"], [drawer-top]')) safely('drawers', () => initDrawers(container));
@@ -1577,6 +1727,8 @@
     safely('contact', initContact);
     safely('drawing', initDrawingOnce);
     safely('form guard', initFormGuard);
+    safely('labels', () => labelControls(document.body));
+    safely('skip link', initSkipLink);
   }
 
   function boot() {
