@@ -1,4 +1,4 @@
-<!-- Analytics (Google Analytics + Reb2b): production domain only, so tests on webflow.io stay out of the numbers -->
+<!-- Analytics (Google Analytics): production domain only, so tests on webflow.io stay out of the numbers -->
 <script>
 (function () {
   var host = location.hostname;
@@ -11,15 +11,6 @@
   g.async = true;
   g.src = 'https://www.googletagmanager.com/gtag/js?id=G-S69Z2M1JMY';
   document.head.appendChild(g);
-  (function (key) {
-    if (window.reb2b) return;
-    window.reb2b = { loaded: true };
-    var s = document.createElement('script');
-    s.async = true;
-    s.src = 'https://ddwl4m2hdecbv.cloudfront.net/b/' + key + '/' + key + '.js.gz';
-    var first = document.getElementsByTagName('script')[0];
-    first.parentNode.insertBefore(s, first);
-  })('4N210HQQW16Z');
 })();
 </script>
 
